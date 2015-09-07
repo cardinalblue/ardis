@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "minitest"
 
   spec.add_runtime_dependency     "activerecord",   "~> 4.2"
+  spec.add_runtime_dependency     "redis",          "~> 3.2"
   spec.add_runtime_dependency     "redis-objects",  "~> 1.1"
   spec.add_runtime_dependency     "kaminari",       "~> 0.16"
   spec.add_runtime_dependency     "draper",         "~> 2.1"
