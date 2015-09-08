@@ -9,9 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Jaime Cham"]
   spec.email         = ["jaime.cham@cardinalblue.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = %q{ Allows easy integration to store indicies to ActiveRecord objects in Redis }
+  spec.homepage      = "https://github.com/cardinalblue/ardis"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
