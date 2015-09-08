@@ -1,5 +1,14 @@
+# Include this way, otherwise will get a warning about the absence of a Framework,
+# see https://github.com/amatsuda/kaminari/issues/518.
+#
 require 'kaminari/config'
+require 'kaminari/helpers/action_view_extension'
+require 'kaminari/helpers/paginator'
 require 'kaminari/models/page_scope_methods'
+require 'kaminari/models/configuration_methods'
+require 'kaminari/hooks'
+
+require_relative 'ardis/autocompacter'
 
 module Ardis
 
@@ -163,9 +172,9 @@ end
 
     def to_a
       finished = false
-      ret = CB::Autocompacter.autocompact(offset_value || 0,
-                                          limit_value || 1_000_000,
-                                          deleting: autocompact_value) do |offset, limit|
+      ret = Autocompacter.autocompact(offset_value || 0,
+                                      limit_value || 1_000_000,
+                                      deleting: autocompact_value) do |offset, limit|
 
         next nil if finished
 
@@ -211,8 +220,8 @@ end
       # Check is in relation, but only if we were given an object
       return false if obj.respond_to?(:id) && !(actual_relation.klass === obj)
 
-      # Check to see if in DB. ActiveRecord `exists?` can be passed an object or an id.
-      return actual_relation.exists? obj
+      # Check to see if in DB. ActiveRecord `exists?` has to be given an id.
+      return actual_relation.exists? ensure_id(obj)
 
       # Subclass should override and actually check that the id matches also.
     end
@@ -295,7 +304,7 @@ end
       if inverse_of
         raise ArgumentError if not container
         objs.each do |obj|
-          if inv = obj.attempt(inverse_of)
+          if inv = obj.try(inverse_of)
             inv.send :_insert, [container], prepend: prepend, inversion_disabled: true
           end
         end
@@ -324,7 +333,7 @@ end
       if inverse_of
         raise ArgumentError if not container
         objs.each do |obj|
-          if inv = obj.attempt(inverse_of)
+          if inv = obj.try(inverse_of)
             inv._delete [container], inversion_disabled: true
           end
         end
@@ -451,7 +460,7 @@ end
     def _compact_ids_inverse ids
       if inverse_of
         actual_relation.model.where(id: ids).each { |obj|
-          if inv_series = obj.attempt(inverse_of)
+          if inv_series = obj.try(inverse_of)
             inv_series.delete container
           end
         }
@@ -495,13 +504,12 @@ end
 
 end
 
-require 'ardis/version'
-require 'ardis/attr_strategy'
-require 'ardis/container_proxy'
+require_relative 'ardis/version'
+require_relative 'ardis/attr_strategy'
+require_relative 'ardis/container_proxy'
 
-require 'ardis/redis'
-require 'ardis/dynamo_series'
-require 'ardis/dsl'
+require_relative 'ardis/redis_adapter'
+require_relative 'ardis/dsl'
 
 module Ardis
   include DSL

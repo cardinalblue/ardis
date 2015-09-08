@@ -4,7 +4,7 @@ module Ardis
 module SeriesTestFixture
 
 class FeedEntry < ActiveRecord::Base
-  include CB::Series
+  include Ardis
 
   attr_accessor :my_accessor
 
@@ -23,6 +23,7 @@ class FeedEntry < ActiveRecord::Base
 
   # ----------------------------------------
   if (Kaminari rescue nil)
+    include Kaminari::ConfigurationMethods
     paginates_per 9  # Kaminari configuration, some odd number
   end
   
@@ -30,7 +31,8 @@ class FeedEntry < ActiveRecord::Base
 end
 
 class User < ActiveRecord::Base
-  include CB::Series
+  include Ardis
+
   self.table_name = 'test_users'
 
   PrivacyPublic  = 0
@@ -86,21 +88,24 @@ end
 # Migrations
 class Migration < ActiveRecord::Migration
   def self.up
+    drop_table   :test_users rescue nil
     create_table :test_users do |t|
       t.string     :name
       t.integer    :privacy_mode
-      t.timestamps
+      t.timestamps null: true
     end
 
+    drop_table   :test_feed_entries rescue nil
     create_table :test_feed_entries do |t|
       t.integer    :key, limit: 8
       t.references :user
-      t.timestamps
+      t.timestamps null: true
     end
 
+    drop_table   :test_feed_entry_details rescue nil
     create_table :test_feed_entry_details do |t|
       t.references :feed_entry
-      t.timestamps
+      t.timestamps null: true
     end
   end
 end
@@ -108,7 +113,7 @@ end
 # Class used to just test the BaseSeries superclass.
 # Hides an Array behind a Series facade.
 #
-class ArraySeries < CB::Series::BaseSeries
+class ArraySeries < Ardis::BaseSeries
   attr_accessor :array
 
   def initialize(array: [],

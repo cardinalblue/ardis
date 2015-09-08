@@ -47,21 +47,21 @@ module DSL
   module ListDSL
     include BaseDSL
     def series_list **opts, &block
-      define_series series_class: CB::Series::Redis::ListSeries, **opts, &block
+      define_series series_class: Ardis::RedisAdapter::ListSeries, **opts, &block
     end
   end
 
   module SortedSetDSL
     include BaseDSL
     def series_sorted_set **opts, &block
-      define_series series_class: CB::Series::Redis::SortedSetSeries, **opts, &block
+      define_series series_class: Ardis::RedisAdapter::SortedSetSeries, **opts, &block
     end
   end
 
   module SetDSL
     include BaseDSL
     def series_set **opts, &block
-      define_series series_class: CB::Series::Redis::SetSeries, **opts, &block
+      define_series series_class: Ardis::RedisAdapter::SetSeries, **opts, &block
     end
   end
 
@@ -73,7 +73,7 @@ module DSL
         assoc_reflection = self.class.reflect_on_association(association)
         assoc_id    = send(assoc_reflection.foreign_key)
         assoc_class = assoc_reflection.klass
-        container_proxy = CB::Series::ContainerProxy.new(assoc_class, assoc_id)
+        container_proxy = Ardis::ContainerProxy.new(assoc_class, assoc_id)
         assoc_class.send "series_for_#{series_name}", container: container_proxy
       end
 

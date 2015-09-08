@@ -1,4 +1,6 @@
+require 'active_support'
 require 'redis'
+require 'redis-objects'
 require 'draper'
 
 # -----------------------------------------------------
@@ -19,10 +21,13 @@ class Redis::Set
 end
 
 module Ardis
-module Redis
+module RedisAdapter
 
 class RedisSeries < ::Ardis::BaseSeries
   include AttrStrategy
+
+  REDIS_KEY_SEQNUMS     = 'ardis:seqnums'
+  REDIS_KEY_UPDATED_AT  = 'ardis:updated_at'
 
   # PRIVATE accessors
   attr_accessor :key,
@@ -98,7 +103,7 @@ class RedisSeries < ::Ardis::BaseSeries
     end
   end
   def updated_at_hash
-    @updated_at_hash ||= ::Redis::HashKey.new(RedisKey::CB_SERIES_UPDATED_AT)
+    @updated_at_hash ||= ::Redis::HashKey.new(REDIS_KEY_UPDATED_AT)
   end
 
   # ---------------------------------------------------------
@@ -134,15 +139,15 @@ class RedisSeries < ::Ardis::BaseSeries
   public
   def seqnum
     raise "seqnum not enabled" unless @seqnum
-    redis_obj.redis.eval_and_load_script(
-        SEQNUM_SCRIPT, [ RedisKey::CB_SERIES_SEQNUMS ], [ actual_key ]
+    eval_and_load_script(redis_obj.redis,
+        SEQNUM_SCRIPT, [ REDIS_KEY_SEQNUMS ], [ actual_key ]
     )
   end
 
   protected
   def increment_seqnum delta=1
-    redis_obj.redis.eval_and_load_script(
-        SEQNUM_INCREMENT_SCRIPT, [ RedisKey::CB_SERIES_SEQNUMS ], [ actual_key, delta ])
+    eval_and_load_script(redis_obj.redis,
+        SEQNUM_INCREMENT_SCRIPT, [ REDIS_KEY_SEQNUMS ], [ actual_key, delta ])
   end
 
   # --------------------------------------------------------
@@ -213,6 +218,40 @@ class RedisSeries < ::Ardis::BaseSeries
     else
       # No container, use the name
       name
+    end
+  end
+
+  protected
+
+  def redis_is_pipeline? redis
+    redis.client.kind_of?(Redis::Pipeline::Multi) ||
+    redis.client.kind_of?(Redis::Pipeline)
+  end
+
+  def eval_and_load_script redis, lua_script, keys, args
+    @@script_shas ||= {}
+
+    # If in pipeline, just evaluate
+    if redis_is_pipeline? redis
+      redis.eval lua_script, keys, args
+      return
+    end
+
+    # Otherwise see if we need to load, load and evaluate
+    if !@@script_shas[lua_script]
+      @@script_shas[lua_script] = redis.script(:load, lua_script)
+    end
+    redis.evalsha(@@script_shas[lua_script], keys, args)
+
+  rescue Redis::CommandError => e
+
+    # If for some reason Redis got restarted and script cache cleared, just clear
+    # the local and retry so that it gets loaded.
+    if e.to_s =~ /NOSCRIPT/
+      @@script_shas[lua_script] = nil
+      retry
+    else
+      raise e
     end
   end
 
@@ -575,6 +614,7 @@ class SortedSetSeries < ListSeries
     score_ids = ids.map{|id|
       score = @calculated_scores[id.to_s] || 0
       [ id.to_s, score ]
+
     }
     ret = redis_obj.merge(score_ids)
 

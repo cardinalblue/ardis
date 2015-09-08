@@ -1,4 +1,4 @@
-require 'test_helper'
+require_relative 'test_helper'
 require_relative 'series_base_test'
 
 class SeriesTest < SeriesBaseTest
@@ -6,13 +6,9 @@ class SeriesTest < SeriesBaseTest
   # -------------------------------------------------------------------------
   # all
 
-  test_varying 'list-like runthrough', klass: [ ListSeries, ArraySeries, DynamoSeries ] do |var|
+  test_varying 'list-like runthrough', klass: [ ListSeries, ArraySeries ] do |var|
 
     series = var.klass.new name: :feed_entries, relation: FeedEntry, container: User.create
-    if var.klass == DynamoSeries
-      setup_dynamo
-      series = series.index_by :user_id_t_index
-    end
 
     assert_equal [], series.to_a
 
@@ -29,14 +25,12 @@ class SeriesTest < SeriesBaseTest
     assert_equal [ f1 ],                        series.limit(1).to_a
     assert_equal [ f3 ],                        series.limit(1).reverse_order.to_a
 
-    unless var.klass == DynamoSeries
-      series.unshift (f4 = FeedEntry.create), (f5 = FeedEntry.create).id
-      assert_equal [ f5, f4, f1, f3 ].map(&:id),  series.to_a.map(&:id)
-      assert_equal [ f1, f3 ],                    series.offset(2).to_a
-      assert_equal [ f1, f4, f5 ],                series.offset(1).reverse_order.to_a
-      assert_equal [ f1, f4 ],                    series.offset(1).limit(2).reverse_order.to_a
-      assert_equal [ f1 ],                        series.offset(2).limit(1).to_a
-    end
+    series.unshift (f4 = FeedEntry.create), (f5 = FeedEntry.create).id
+    assert_equal [ f5, f4, f1, f3 ].map(&:id),  series.to_a.map(&:id)
+    assert_equal [ f1, f3 ],                    series.offset(2).to_a
+    assert_equal [ f1, f4, f5 ],                series.offset(1).reverse_order.to_a
+    assert_equal [ f1, f4 ],                    series.offset(1).limit(2).reverse_order.to_a
+    assert_equal [ f1 ],                        series.offset(2).limit(1).to_a
 
   end
 
@@ -51,7 +45,7 @@ class SeriesTest < SeriesBaseTest
       when SetSeries
         assert_equal 5, result.count
         assert_subset @entries, result, series.name.to_s
-      when ListSeries, ArraySeries, DynamoSeries
+      when ListSeries, ArraySeries
         assert_equal @entries[3, 5], result, series.name
       end
     }
@@ -68,7 +62,7 @@ class SeriesTest < SeriesBaseTest
       when SetSeries
         assert_equal 5, result.count
         assert_subset @entries, result, series.name.to_s
-      when ListSeries, ArraySeries, DynamoSeries
+      when ListSeries, ArraySeries
         assert_equal @entries.reverse[3, 5], result, series.name
       end
     }
@@ -93,10 +87,9 @@ class SeriesTest < SeriesBaseTest
   end
 
   test_varying 'offset from empty',
-               klass: [ ListSeries, SortedSetSeries, SetSeries, ArraySeries, DynamoSeries ],
+               klass: [ ListSeries, SortedSetSeries, SetSeries, ArraySeries ],
                offset: [nil, 0, 4],
                limit: [nil, 1, 4] do |var|
-    setup_dynamo if var.klass == DynamoSeries
 
     series = var.klass.new name: :feed_entries, relation: FeedEntry, container: User.create
     assert_equal [], series.offset(var.offset).limit(var.limit).to_a
@@ -113,7 +106,7 @@ class SeriesTest < SeriesBaseTest
   # Relation setting
 
   class RelationContainer
-    include CB::Series::SeriesTestFixture
+    include Ardis::SeriesTestFixture
     def private_users
       User.where(privacy_mode: User::PrivacyPrivate)
     end
@@ -184,7 +177,7 @@ class SeriesTest < SeriesBaseTest
     end
   end
 
-  test_varying 'push obj or ids on list', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'push obj or ids on list', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     series.push *10.times.map{ FeedEntry.create }
     series.push *10.times.map{ FeedEntry.create.id }
@@ -201,7 +194,7 @@ class SeriesTest < SeriesBaseTest
       # The negative score reverses them
   end
 
-  test_varying 'list/array push', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'list/array push', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     new_entry = FeedEntry.create
     series << new_entry
@@ -219,7 +212,7 @@ class SeriesTest < SeriesBaseTest
     assert_equal @entries.count + 1, series.total_count
   end
 
-  test_varying 'list/array shift 1', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'list/array shift 1', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     preshifted = series.offset(0).limit(1).to_a[0]
     shifted    = series.shift
@@ -228,7 +221,7 @@ class SeriesTest < SeriesBaseTest
 
   end
 
-  test_varying 'list shift n', n: [0, 3, 20], series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'list shift n', n: [0, 3, 20], series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     preshifted = series.offset(0).limit(var.n).to_a
     shifted    = series.shift var.n
@@ -268,13 +261,13 @@ class SeriesTest < SeriesBaseTest
   # -------------------------------------------------------------------------
   # First/Last
 
-  test_varying 'list/array first', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'list/array first', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     assert_equal @entries.first, series.first
     assert_equal @entries,       series.to_a  # `.to_a` should still be everything
   end
 
-  test_varying 'list/array first autocompacting', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'list/array first autocompacting', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     2.times do
       @entries.delete_at(0).destroy
@@ -282,7 +275,7 @@ class SeriesTest < SeriesBaseTest
     assert_equal @entries.first, series.autocompact.first
   end
 
-  test_varying 'list last', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'list last', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     assert_equal @entries.last, series.last
     assert_equal @entries, series.to_a  # `.to_a` should still be everything
@@ -320,7 +313,7 @@ class SeriesTest < SeriesBaseTest
   end
 
   test 'select' do
-    [t_list, t_array, t_dynamo, t_sortedset, t_set].each{ |series|
+    [t_list, t_array, t_sortedset, t_set].each{ |series|
       series.select(:id).select(:key, :created_at).each{ |entry|
         assert entry.id
         assert entry.key
@@ -353,20 +346,20 @@ class SeriesTest < SeriesBaseTest
   # -------------------------------------------------------------------------
   # include?
 
-  test_varying 'include?', series: %w[ t_list t_array t_dynamo t_sortedset t_set ] do |var|
+  test_varying 'include?', series: %w[ t_list t_array t_sortedset t_set ] do |var|
     new_entry = FeedEntry.create
     s = eval var.series
     refute s.include?(new_entry)
     s.push new_entry
     assert s.include?(new_entry)
     assert s.include?(new_entry.id)
-    refute s.include?(232323232323)
+    refute s.include?(23232323)
 
     fake_obj = Struct.new(:id).new new_entry.id
     assert !s.include?(fake_obj)
   end
 
-  test_varying 'include? checks existence', series: %w[ t_list t_array t_dynamo t_sortedset t_set ] do |var|
+  test_varying 'include? checks existence', series: %w[ t_list t_array t_sortedset t_set ] do |var|
     entry = @entries[0]
     s = eval var.series
     s << entry
@@ -402,7 +395,7 @@ class SeriesTest < SeriesBaseTest
   # -------------------------------------------------------------------------
   # Sample
 
-  test_varying 'sample', series:%w[ t_list t_array t_dynamo t_sortedset t_set ] do |var|
+  test_varying 'sample', series:%w[ t_list t_array t_sortedset t_set ] do |var|
     s   = eval var.series
     all = s.to_a
 
@@ -439,15 +432,14 @@ class SeriesTest < SeriesBaseTest
   # -------------------------------------------------------------------------
   # Attributes
 
-  test_varying 'count', series: %w[ t_list t_array t_dynamo ] do |var|
+  test_varying 'count', series: %w[ t_list t_array ] do |var|
     series = eval(var.series)
     assert_equal 5, series.offset(5).count
     assert_equal 3, series.offset(5).limit(3).count
     assert_equal 0, series.offset(11).count
   end
 
-  test_varying 'updated_at', klass: [ ListSeries, SortedSetSeries, DynamoSeries ] do |var|
-    setup_dynamo if var.klass == DynamoSeries
+  test_varying 'updated_at', klass: [ ListSeries, SortedSetSeries ] do |var|
 
     series = var.klass.new(name: :feed_entries, relation: FeedEntry, container: User.create)
     assert_equalities nil, series.updated_at
@@ -459,7 +451,7 @@ class SeriesTest < SeriesBaseTest
     end
   end
 
-  test_varying 'updated_at', series: %w[ t_list t_array t_dynamo t_sortedset t_set ],
+  test_varying 'updated_at', series: %w[ t_list t_array t_sortedset t_set ],
                              method: %i[ << push unshift delete ] do |var|
     t = rand(100000000)
     stub(Time).now{ Time.at t }
@@ -471,8 +463,7 @@ class SeriesTest < SeriesBaseTest
     assert_equal t, s.updated_at.to_i
   end  
 
-  test_varying 'empty?', klass: [ ListSeries, ArraySeries, DynamoSeries ] do |var|
-    setup_dynamo if var.klass == DynamoSeries
+  test_varying 'empty?', klass: [ ListSeries, ArraySeries ] do |var|
 
     series = var.klass.new(name: :feed_entries, relation: FeedEntry, container: User.create)
     assert series.empty?
@@ -589,8 +580,6 @@ class SeriesTest < SeriesBaseTest
 
   test 'initializer atomic' do
 
-    ::Redis.current.client.logger = Rails.logger
-
     series_opts = {
       key: :initializer_atomic_test,
       relation: User,
@@ -635,8 +624,6 @@ class SeriesTest < SeriesBaseTest
 
   test 'initializer empty' do
 
-    ::Redis.current.client.logger = Rails.logger
-
     series_opts = {
         key: :initializer_atomic_test,
         relation: User,
@@ -651,7 +638,6 @@ class SeriesTest < SeriesBaseTest
   end
 
   test 'initializer can return ids' do
-    ::Redis.current.client.logger = Rails.logger
 
     series_opts = {
         key: :initializer_return_ids,
@@ -866,11 +852,11 @@ class SeriesTest < SeriesBaseTest
 
   class Liker < User
     self.table_name = superclass.table_name
-    include CB::Series
+    include Ardis
   end
   class Likeable < FeedEntry
     self.table_name = superclass.table_name
-    include CB::Series
+    include Ardis
   end
 
 
@@ -930,7 +916,7 @@ class SeriesTest < SeriesBaseTest
       entries -= deleted
     else
       # Replace in-place with `nil`
-      entries = entries.map{|e| e.in?(deleted) ? nil: e }
+      entries = entries.map{|e| deleted.include?(e)? nil: e }
     end
 
     # We can't check the arrays exactly, since the compacting algorithm throws
@@ -990,7 +976,7 @@ class SeriesTest < SeriesBaseTest
     
     # Set an owner to private so that it will be filtered out by Series when autocompact is set
     owners[0].update_attribute :privacy_mode, Liker::PrivacyPrivate
-    private_entry = Likeable.find(owners[0].feed_entries[0])
+    private_entry = Likeable.find(owners[0].feed_entries[0].id)
     liked_entries = liker.liked_entries.autocompact.to_a
 
     # Check that the entry by the private owner is indeed purged
@@ -1009,7 +995,7 @@ class SeriesTest < SeriesBaseTest
   end
   def assert_include? array, item
     assert array.include?(item), 
-      "#{array.map{|i| i && i.attempt(:id) || i }} does not include #{item && item.attempt(:id) || item }"
+           "#{array.map{|i| i && i.try(:id) || i }} does not include #{item && item.try(:id) || item }"
   end
 
 
@@ -1164,7 +1150,7 @@ class SeriesTest < SeriesBaseTest
     
     u2 = User.create privacy_mode: User::PrivacyPrivate
     series1 << u2
-    5.times { assert series1.sample.first.in?([ u1, u2 ]) }
+    5.times { assert [ u1, u2 ].include? series1.sample.first }
     2.times { assert_equal [u1,u2], series1.sample(2).sort_by(&:id) }
     2.times { assert_equal [u1,u2], series1.sample(3).sort_by(&:id) }
     
@@ -1174,9 +1160,9 @@ class SeriesTest < SeriesBaseTest
                 relation: User.where(privacy_mode: User::PrivacyPublic)
                 
     series2.push u1, u2
-    3.times { assert series2.sample.first.in?([ u1, nil ]) }
-    5.times { assert series2.sample(2).in?([ [u1] , [] ]) }
-    5.times { assert series2.sample(3).in?([ [u1] , [] ]) }
+    3.times { assert [ u1, nil ].include? series2.sample.first }
+    5.times { assert [[u1] , []].include? series2.sample(2) }
+    5.times { assert [[u1] , []].include? series2.sample(3) }
   end
 
 

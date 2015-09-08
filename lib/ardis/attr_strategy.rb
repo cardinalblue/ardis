@@ -27,7 +27,7 @@ class NamedAttrStrategy < BaseAttrStrategy
     target.send(attr_name)
   end
   def report_attr(target, attr)
-    target.attempt("#{attr_name}=", attr)
+    target.try("#{attr_name}=", attr)
   end
 
 end
