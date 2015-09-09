@@ -1,7 +1,7 @@
 # Ardis
 
 Ardis is a simple library that allows you to leverage the NoSQL [Redis](http://redis.io/) store to index, group, rank or associate traditional `ActiveRecord` objects.
-Internally, Ardis *only* stores the `id`s of the `ActiveRecord` objects in Redis datastructures, but provides an `ActivRecord` association-like interface.
+Internally, Ardis *only* stores the `id`s of the `ActiveRecord` objects in Redis data structures, but provides an `ActivRecord` association-like interface.
 
 ## Installation
 
@@ -85,7 +85,7 @@ series_sorted_set name: 'my_collection', key: 'custom:redis:key', global: true
 ```
 
 #### Series types
-Implementations are provided for the basic [Redis datastructures](http://redis.io/topics/data-types):
+Implementations are provided for the basic [Redis data structures](http://redis.io/topics/data-types):
 - [Lists](http://redis.io/topics/data-types-intro#lists)
 - [Sets](http://redis.io/topics/data-types-intro#sets)
 - [Sorted sets](http://redis.io/topics/data-types-intro#sorted-sets)
@@ -134,9 +134,46 @@ irb> s.limit(2).to_a
  => [ #<User name: 'Clay'> ]
 ```
 
+#### Sorted Sets
+One of the most useful Redis data structures is the [Sorted Set](http://redis.io/topics/data-types-intro#sorted-sets).
+With Ardis, each of the `ActiveRecord` objects (or rather its `id`) associated with a *score*, by which
+they are sorted. The score can be configured to be read automatically from an attribute:
+
+```ruby
+class User < ActiveRecord::Base
+  series_sorted_set global: true, name: :queue_by_age, attr_score: :age
+end
+
+@joe = User.create age: 21
+User.queue_by_age << @joe
+User.queue_by_age.score_for(@joe)
+ => 21.0
+User.queue_by_age.incr(@joe, 1)
+```
+
+The score can also be calculated on the fly and set automatically upon reading (to avoid trips to the :
+
+```ruby
+
+class User < ActiveRecord::Base
+  series_sorted_set global: true, name: :queue_by_bmi, attr_score: :bmi
+
+  attr_writer :bmi
+  def bmi
+    @bmi ||= weight / (height * height)
+  end
+end
+
+@bob = User.create height:186, weight:80
+User.queue_by_bmi << @bob
+users = User.queue_by_age.with_scores.to_a
+ => [ #<User @bmi=0.0023 ... > ]
+```
+
 #### Advanced usage
 (Documentation coming soon)
 - `initializer`
+- Custom Redis client, for pipelining/multi
 
 ## Development
 
