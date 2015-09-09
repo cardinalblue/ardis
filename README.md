@@ -60,6 +60,8 @@ class MyModel < ActiveRecord::Base
     irb> m.users.limit(2).to_a
      => [ #<User id: 1, ... >, #<User id: 2, ... > ]
 
+The instance that holds the Series (in the example above `m`) is referred to as the "container".
+
 When retrieveing objects from a collection, most of the methods familiar from
 `ActiveRecord` relations work:
 
@@ -68,6 +70,9 @@ m.users.limit(10).offset(2).reverse_order
 m.users.page(2)                      # `Kaminari` integration
 m.users.includes?(@joe)              # Check if in collection
 m.users.includes(:some_association)  # Eager-loading
+m.users.count                        # Can be faster, unlike PostgreSQL
+m.users.empty?
+m.users.delete(@joe)
 ```
 
 #### Redis keys
