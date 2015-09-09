@@ -33,8 +33,10 @@ class MyModel < ActiveRecord::Base
 
     irb> m = MyModel.create
      => #<MyModel id: 1, ... >
+
     irb> MyModel.a_collection << m
      => #<Ardis::RedisAdapter::ListSeries @name=:a_collection ... >
+
     irb> MyModel.a_collection.first
      => #<MyModel id: 1, ... >
 
@@ -48,10 +50,13 @@ class MyModel < ActiveRecord::Base
 
     irb> m = MyModel.create
      => #<MyModel id: 1, ... >
+
     irb> m.users << User.create(name: 'John Doe')
      => #<Ardis::RedisAdapter::ListSeries @name=:users ... >
+
     irb> m.users << User.create(name: 'Jane Tow')
      => #<Ardis::RedisAdapter::ListSeries @name=:users ... >
+
     irb> m.users.limit(2).to_a
      => [ #<User id: 1, ... >, #<User id: 2, ... > ]
 
@@ -103,15 +108,22 @@ Running a query with `autocompact` automatically purges that id from the Redis d
 
 ```ruby
 irb> s = Ardis::RedisAdapter::ListSeries.new name: 'list', relation: User
+
 irb> s << User.create name: 'Bill'
+
 irb> s << User.create name: 'Clay'
+
 irb> s.to_a
  => [ #<User name: 'Bill'>, #<User name: 'Clay'> ]
+
 irb> User.where(name: 'Bill').destroy_all
+
 irb> s.limit(2).to_a
  => [ nil, #<User name: 'Clay'> ]
+
 irb> s.limit(2).autocompact.to_a
  => [ #<User name: 'Clay'> ]
+
 irb> s.limit(2).to_a
  => [ #<User name: 'Clay'> ]
 ```
