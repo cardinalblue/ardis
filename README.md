@@ -29,16 +29,12 @@ require 'ardis'
 class MyModel < ActiveRecord::Base
   include Ardis
   series_list name: 'mycollection', global: true
+
+m = MyModel.create
+MyModel.mycollection << m
+MyModel.mycollection.first
+ => #<MyModel id: 1, ... >
 ```
-
-    irb> m = MyModel.create
-     => #<MyModel id: 1, ... >
-
-    irb> MyModel.mycollection << m
-     => #<Ardis::RedisAdapter::ListSeries @name=:mycollection ... >
-
-    irb> MyModel.mycollection.first
-     => #<MyModel id: 1, ... >
 
 Or you can create an instance-level Series:
 
@@ -46,19 +42,14 @@ Or you can create an instance-level Series:
 class MyModel < ActiveRecord::Base
   ...
   series_list name: 'users', relation: User
+end
+
+m = MyModel.create
+m.users << User.create(name: 'John Doe')
+m.users << User.create(name: 'Jane Tow')
+m.users.limit(2).to_a
+ => [ #<User id: 1, ... >, #<User id: 2, ... > ]
 ```
-
-    irb> m = MyModel.create
-     => #<MyModel id: 1, ... >
-
-    irb> m.users << User.create(name: 'John Doe')
-     => #<Ardis::RedisAdapter::ListSeries @name=:users ... >
-
-    irb> m.users << User.create(name: 'Jane Tow')
-     => #<Ardis::RedisAdapter::ListSeries @name=:users ... >
-
-    irb> m.users.limit(2).to_a
-     => [ #<User id: 1, ... >, #<User id: 2, ... > ]
 
 The instance that holds the Series (in the example above `m`) is referred to as the "container".
 
