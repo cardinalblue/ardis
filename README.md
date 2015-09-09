@@ -71,11 +71,12 @@ m.users.includes(:some_association)  # Eager-loading
 ```
 
 #### Redis keys
-If using the DSL, Ardis will choose appropriate Redis keys depending if the Series
-is `global` or not, but the key can always be overridden manually:
+If using the DSL, Ardis will choose the appropriate Redis keys based on the Class
+name and given name, and depending if the Series is `global` or not, but the key
+can always be overridden manually:
 
 ```ruby
-series_sorted_set name: 'my_collection', key: 'custom:redis:key`, global: true
+series_sorted_set name: 'my_collection', key: 'custom:redis:key', global: true
 ```
 
 #### Series types
