@@ -77,7 +77,7 @@ m.users.delete(@joe)
 
 #### Redis keys
 If using the DSL, Ardis will choose the appropriate Redis keys based on the Class
-name and given name, and depending if the Series is `global` or not, but the key
+name, container and given name, and depending if the Series is `global` or not, but the key
 can always be overridden manually:
 
 ```ruby
