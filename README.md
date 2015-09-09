@@ -29,6 +29,7 @@ require 'ardis'
 class MyModel < ActiveRecord::Base
   include Ardis
   series_list name: 'mycollection', global: true
+end
 
 m = MyModel.create
 MyModel.mycollection << m
@@ -40,7 +41,7 @@ Or you can create an instance-level Series:
 
 ```ruby
 class MyModel < ActiveRecord::Base
-  ...
+  include Ardis
   series_list name: 'users', relation: User
 end
 
@@ -104,6 +105,12 @@ end
 class Photo < ActiveRecord::Base
   series_list name: 'likers', relation: User, inverse_of: 'liked_photos'
 end
+
+u = User.create name: 'Jaime'
+p = Photo.create caption: 'The beach!'
+u.liked_photos << p
+p.likers.to_a
+ => [ #<User @name='Jaime' ... > ]
 ```
 
 Internally they are two different Redis lists, but you only have to insert and remove from one of them.
@@ -113,24 +120,19 @@ If the underlying `ActiveRecord` row is deleted, Ardis will return `nil` for tha
 Running a query with `autocompact` automatically purges that id from the Redis datastructure.
 
 ```ruby
-irb> s = Ardis::RedisAdapter::ListSeries.new name: 'list', relation: User
-
-irb> s << User.create name: 'Bill'
-
-irb> s << User.create name: 'Clay'
-
-irb> s.to_a
+s = Ardis::RedisAdapter::ListSeries.new name: 'list', relation: User
+s << User.create name: 'Bill'
+s << User.create name: 'Clay'
+s.to_a
  => [ #<User name: 'Bill'>, #<User name: 'Clay'> ]
 
-irb> User.where(name: 'Bill').destroy_all
+User.where(name: 'Bill').destroy_all
 
-irb> s.limit(2).to_a
+s.limit(2).to_a
  => [ nil, #<User name: 'Clay'> ]
-
-irb> s.limit(2).autocompact.to_a
+s.limit(2).autocompact.to_a
  => [ #<User name: 'Clay'> ]
-
-irb> s.limit(2).to_a
+s.limit(2).to_a
  => [ #<User name: 'Clay'> ]
 ```
 
