@@ -28,16 +28,16 @@ require 'ardis'
 
 class MyModel < ActiveRecord::Base
   include Ardis
-  series_list name: 'a_collection', global: true
+  series_list name: 'mycollection', global: true
 ```
 
     irb> m = MyModel.create
      => #<MyModel id: 1, ... >
 
-    irb> MyModel.a_collection << m
-     => #<Ardis::RedisAdapter::ListSeries @name=:a_collection ... >
+    irb> MyModel.mycollection << m
+     => #<Ardis::RedisAdapter::ListSeries @name=:mycollection ... >
 
-    irb> MyModel.a_collection.first
+    irb> MyModel.mycollection.first
      => #<MyModel id: 1, ... >
 
 Or you can create an instance-level Series:
@@ -73,6 +73,8 @@ m.users.includes(:some_association)  # Eager-loading
 m.users.count                        # Can be faster, unlike PostgreSQL
 m.users.empty?
 m.users.delete(@joe)
+m.users.where(gender: 'male')        # Will `nil`-out objects that don't match
+                                     # (but only remove if `autocompact`, see below).
 ```
 
 #### Redis keys
@@ -81,8 +83,15 @@ name, container and given name, and depending if the Series is `global` or not, 
 can always be overridden manually:
 
 ```ruby
-series_sorted_set name: 'my_collection', key: 'custom:redis:key', global: true
+series_sorted_set name: 'mycollection', key: 'custom:redis:key', global: true
 ```
+
+or calculated on the fly:
+
+```ruby
+series_sorted_set name: 'mycollection', key: ->(container){ "mycollection:#{container.id}:somename" }
+```
+
 
 #### Series types
 Implementations are provided for the basic [Redis data structures](http://redis.io/topics/data-types):
@@ -151,7 +160,8 @@ User.queue_by_age.score_for(@joe)
 User.queue_by_age.incr(@joe, 1)
 ```
 
-The score can also be calculated on the fly and set automatically upon reading (to avoid trips to the :
+The score can also be calculated on the fly and set automatically upon reading
+(to avoid extra trips to the database):
 
 ```ruby
 
