@@ -26,31 +26,35 @@ Basic usage is using the DSL to create a class-level collection (i.e. a "Series"
 ```ruby
 require 'ardis'
 
-class MyModel < ActiveRecord::Base
+class Collage < ActiveRecord::Base
   include Ardis
-  series_list name: 'mycollection', global: true
+  series_list name: 'featured', global: true
 end
 
-m = MyModel.create
-MyModel.mycollection << m
-MyModel.mycollection.first
- => #<MyModel id: 1, ... >
+c = Collage.create
+Collage.featured << c
+Collage.featured.first
+ => #<Collage id: 1, ... >
 ```
 
 Or you can create an instance-level Series:
 
 ```ruby
-class MyModel < ActiveRecord::Base
+class Collage < ActiveRecord::Base
   include Ardis
-  series_list name: 'users', relation: User
+  series_list name: 'likers', relation: User
 end
 
-m = MyModel.create
-m.users << User.create(name: 'John Doe')
-m.users << User.create(name: 'Jane Tow')
-m.users.limit(2).to_a
+c = Collage.create
+c.likers << User.create(name: 'John Doe')
+c.likers << User.create(name: 'Jane Tow')
+c.likers.limit(2).to_a
  => [ #<User id: 1, ... >, #<User id: 2, ... > ]
 ```
+
+Which would result in:
+
+![Diagram with PostgreSQL and Redis](images/postgres-redis.png)
 
 The instance that holds the Series (in the example above `m`) is referred to as the "container".
 
