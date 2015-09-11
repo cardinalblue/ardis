@@ -54,7 +54,14 @@ m.users.limit(2).to_a
 
 The instance that holds the Series (in the example above `m`) is referred to as the "container".
 
-When retrieveing objects from a collection, most of the methods familiar from
+Of course you can always create it manually:
+
+```ruby
+s = Ardis::RedisAdapter::ListSeries.new(key: 'collages:featured', relation: Collage)
+s << Collage.create
+```
+
+When retrieving objects from a collection, most of the methods familiar from
 `ActiveRecord` relations work:
 
 ```ruby
