@@ -56,9 +56,9 @@ Which would result in:
 
 ![Diagram with PostgreSQL and Redis](images/postgres-redis.png)
 
-The instance that holds the Series (in the example above `m`) is referred to as the "container".
+The instance that holds the Series (in the example above the Collage `c`) is referred to as the "container".
 
-Of course you can always create it manually:
+Of course you can always create a Series manually:
 
 ```ruby
 s = Ardis::RedisAdapter::ListSeries.new(key: 'collages:featured', relation: Collage)
