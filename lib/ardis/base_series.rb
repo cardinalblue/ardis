@@ -42,6 +42,7 @@ module Ardis
                     initializer:      nil,
                     inverse_of:       nil,
                     decorator:        nil,
+                    expiration:       nil,
                     &extension_block)
 
       @name             = name
@@ -50,6 +51,7 @@ module Ardis
       @initializer      = initializer
       @inverse_of       = inverse_of
       @decorator        = decorator
+      @expiration       = expiration
 
       # ActiveRecord relation bookkeeping attributes
       @where_values     = []
