@@ -37,5 +37,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency     "redis",          ">= 3.2"
   spec.add_runtime_dependency     "redis-objects",  ">= 1.2.1"
   spec.add_runtime_dependency     "kaminari",       ">= 0.16"
-  spec.add_runtime_dependency     "draper",         ">= 2.1"
+  spec.add_runtime_dependency     "draper",         ">= 3.0.0.pre1"
 end
