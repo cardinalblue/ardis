@@ -803,7 +803,6 @@ class SeriesTest < SeriesBaseTest
     # https://redis.io/commands/expire
     # https://github.com/nateware/redis-objects#expiration
     #
-    s = ListSeries.new name: :expiration_test, relation: FeedEntry, redis_opts: { expiration: 1 }
     s = ListSeries.new name: :expiration_test, relation: FeedEntry, expiration: 1
     s << FeedEntry.create
     assert s.exists?
