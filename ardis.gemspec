@@ -26,17 +26,16 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "bundler",        "~> 1.10"
-  spec.add_development_dependency "rake",           "~> 10.0"
+  spec.add_development_dependency "bundler",        ">= 1.10"
+  spec.add_development_dependency "rake",           ">= 10.0"
   spec.add_development_dependency "minitest"
   spec.add_development_dependency "sqlite3"
   spec.add_development_dependency "rr"
 
-  spec.add_runtime_dependency     "activerecord",   "~> 4.2"
-  spec.add_runtime_dependency     "redis",          "~> 3.2"
-  spec.add_runtime_dependency     "redis-objects",  "1.1"     # There is an issue with 1.2
-                                                              # see https://github.com/nateware/redis-objects/issues/185
-  spec.add_runtime_dependency     "kaminari",       "~> 0.16"
-  spec.add_runtime_dependency     "draper",         "~> 2.1"
-
+  spec.add_runtime_dependency     "activerecord",   ">= 4.2"
+  spec.add_runtime_dependency     "activemodel-serializers-xml"
+  spec.add_runtime_dependency     "redis",          ">= 3.2"
+  spec.add_runtime_dependency     "redis-objects",  ">= 1.2.1"
+  spec.add_runtime_dependency     "kaminari",       ">= 0.16"
+  spec.add_runtime_dependency     "draper",         ">= 3.0.0.pre1"
 end

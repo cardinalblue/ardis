@@ -189,6 +189,10 @@ class RedisSeries < ::Ardis::BaseSeries
 
           end
         end
+
+        if @expiration
+          redis_client.expire(actual_key, @expiration)
+        end
       end
 
       @checked_initializer = true
@@ -362,6 +366,17 @@ class ListSeries < RedisSeries
   end
   def redis_obj_args
     [actual_key, redis_client, @redis_opts].compact
+    [actual_key, redis_client, redis_opts].compact
+  end
+  def redis_opts
+    # Impossible to set expiration using redis-objects within a multi/exec block
+    # that the initializer is called in. If both given, the expiration has to be
+    # set explicitly AFTER the initializer is called.
+    if @expiration && !@initializer
+      @redis_opts.reverse_merge(expiration: @expiration)
+    else
+      @redis_opts
+    end
   end
 
 end

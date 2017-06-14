@@ -798,6 +798,25 @@ class SeriesTest < SeriesBaseTest
     assert_equal entries[-10, 10], s.to_a
   end
 
+  test 'expiration' do
+    # Details:
+    # https://redis.io/commands/expire
+    # https://github.com/nateware/redis-objects#expiration
+    #
+    s = ListSeries.new name: :expiration_test, relation: FeedEntry, expiration: 1
+    s << FeedEntry.create
+    assert s.exists?
+    sleep 1.01
+    refute s.exists?
+  end
+
+  test 'expiration with initializer' do
+    s = ListSeries.new name: :exp_with_init_test, relation: FeedEntry, expiration: 1,
+      initializer: -> (_) { [ FeedEntry.create, FeedEntry.create ] }
+    assert_equal 2, s.count
+    sleep 1.01
+    refute s.exists?
+  end
   # -------------------------------------------------------------------------
   # ---- Kaminari behavior
   if (Kaminari rescue nil)
